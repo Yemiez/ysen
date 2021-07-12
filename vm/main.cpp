@@ -23,10 +23,8 @@ int main()
 		for (var x : 0..99) {
 			print("x={}", x);
 		}
-
 		var b = 5;
 		var a = b;
-
 		a = 20;
 		print('a={}, b={}', a, b);
 )", lang::WhitespacePolicy::Ignore, lang::CommentPolicy::Ignore);
@@ -37,7 +35,7 @@ int main()
 		auto top_node = parser->parse(lexer->tokens());
 		auto interpreter = core::make_shared<astvm::Interpreter>();
 
-		interpreter->add(astvm::function("print", [](astvm::TreatAsArguments, const std::vector<astvm::Value>& arguments) -> int {
+		interpreter->add(astvm::function("print", [](astvm::VariadicFunction, const std::vector<astvm::Value>& arguments) -> int {
 			const auto& fmt = arguments.at(0);
 			if (!fmt.is_string() && arguments.size() > 1) {
 				return 1;

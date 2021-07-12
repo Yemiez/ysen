@@ -6,7 +6,7 @@
 
 namespace ysen::lang::astvm {
 
-	struct TreatAsArguments {};
+	struct VariadicFunction {};
 	
 	namespace details {
 		template<typename Fty>
@@ -310,10 +310,10 @@ namespace ysen::lang::astvm {
 				return [callable = std::function<typename Traits::Signature>{callable}](Interpreter& vm, const std::vector<Value>& arguments) -> Value {
 					using NewTraits = FunctionTraits<decltype(callable)>;
 
-					if constexpr (std::is_same_v<typename NewTraits::template ArgTypeAt<0>, TreatAsArguments>) {
-						return callable(TreatAsArguments{}, arguments);
+					if constexpr (std::is_same_v<typename NewTraits::template ArgTypeAt<0>, VariadicFunction>) {
+						return callable(VariadicFunction{}, arguments);
 					}
-					if constexpr (!std::is_same_v<typename NewTraits::template ArgTypeAt<0>, TreatAsArguments>) {
+					if constexpr (!std::is_same_v<typename NewTraits::template ArgTypeAt<0>, VariadicFunction>) {
 						return Caller<0, NewTraits::ARITY, NewTraits>::invoke(arguments, callable);
 					}
 				};
