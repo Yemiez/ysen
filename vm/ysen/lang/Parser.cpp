@@ -129,7 +129,7 @@ ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_factor()
 	if (token.is_integer()) {
 		auto number = token.content().to_integer();
 
-		if (peek().is_dot() && !eof(1) && peek(1).is_dot() && !eof(2) && peek(2).is_integer()) {
+		if (!eof() && peek().is_dot() && !eof(1) && peek(1).is_dot() && !eof(2) && peek(2).is_integer()) {
 			consume(); // ..
 			consume();
 			auto max_tok = consume();
