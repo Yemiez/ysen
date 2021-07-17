@@ -103,8 +103,11 @@ namespace ysen::lang::astvm {
 		bool is_array() const { return m_type == ValueType::Array; }
 		bool is_object() const { return m_type == ValueType::Object; }
 		bool is_trivial() const { return m_type >= ValueType::Bool && m_type <= ValueType::Double; }
+		bool is_trueish() const;
+		bool is_falseish() const;
 		
 	public: // Operators
+		bool operator>(const Value&) const;
 		bool operator<(const Value&) const;
 		bool operator==(const Value&) const;
 		Value operator+(const Value&) const;
@@ -272,4 +275,6 @@ namespace ysen::lang::astvm {
 
 		throw std::exception();
 	}
+
+	inline Value undefined() { return {}; }
 }

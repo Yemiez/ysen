@@ -126,6 +126,147 @@ size_t ysen::lang::astvm::Value::hash() const
 	}
 }
 
+bool ysen::lang::astvm::Value::is_trueish() const
+{
+	if (m_type == ValueType::Bool) {
+		return m_trivial.b;
+	}
+
+	if (is_trivial()) {
+		return cast<bool>();
+	}
+
+	if (is_array()) {
+		return !m_array.empty();
+	}
+
+	if (is_object()) {
+		return !m_object.empty();
+	}
+
+	if (is_function()) {
+		return !m_function.is_null();
+	}
+
+	return false; // Undefined & Null
+}
+bool ysen::lang::astvm::Value::is_falseish() const
+{
+	return !is_trueish();
+}
+
+bool ysen::lang::astvm::Value::operator>(const Value& other) const
+{
+	switch (m_type) {
+	case ValueType::Undefined:
+	case ValueType::Null:
+		return false;
+	case ValueType::Array:
+		{
+			if (other.is_array()) {
+				return false;
+			}
+
+			if (other.is_trivial() && other.cast<int>() == 0) {
+				return true;
+			}
+
+			return false;
+		}
+	case ValueType::Object: 
+		{
+			if (other.is_object()) {
+				return false;
+			}
+
+			if (other.is_trivial() && other.cast<int>() == 0) {
+				return true;
+			}
+
+			return false;
+		}
+	case ValueType::String:
+		{
+			if (other.is_string()) {
+				return m_string > other.m_string;
+			}
+
+			if (other.is_trivial() && m_string.is_integer()) {
+				return m_string.to_integer() > other.cast<int>();
+			}
+
+			return false;
+		}
+	case ValueType::Function:
+		{
+			return m_function->name() > other.m_function->name();	
+		}
+	case ValueType::Bool:
+		{
+			if (other.m_type == ValueType::Bool) {
+				return m_trivial.b > other.m_trivial.b;
+			}
+
+			if (other.is_trivial()) {
+				return m_trivial.b > other.cast<bool>();
+			}
+
+			return false;
+		}
+	case ValueType::Int:
+		{
+			if (other.m_type == ValueType::Int) {
+				return m_trivial.i > other.m_trivial.i;
+			}
+
+			if (other.is_trivial()) {
+				return m_trivial.i > other.cast<int>();
+			}
+
+			if (other.is_string() && other.string().is_integer()) {
+				return m_trivial.i > other.string().to_integer();
+			}
+			
+			return false;
+		}
+	case ValueType::Float:
+		{
+			if (other.m_type == ValueType::Float) {
+				return m_trivial.f > other.m_trivial.f;
+			}
+
+			if (other.is_trivial()) {
+				return m_trivial.f > other.cast<float>();
+			}
+
+			if (other.is_string() && (other.string().is_integer() || other.string().is_float())) {
+				return m_trivial.f > other.string().to_float();
+			}
+
+			return false;
+		}
+	case ValueType::Double:
+		{
+			if (other.m_type == ValueType::Float) {
+				return m_trivial.f > other.m_trivial.f;
+			}
+
+			if (other.is_trivial()) {
+				return m_trivial.f > other.cast<float>();
+			}
+
+			if (other.is_string() && (other.string().is_integer() || other.string().is_float())) {
+				return m_trivial.f > other.string().to_float();
+			}
+
+			return false;
+		}
+	default:;
+	}
+	
+	return false;
+}
+
 bool ysen::lang::astvm::Value::operator<(const Value& other) const
 {
 	switch (m_type) {
