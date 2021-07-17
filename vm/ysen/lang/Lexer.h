@@ -131,7 +131,7 @@ namespace ysen::lang {
 		auto comment_policy() const { return m_comment_policy; }
 		
 	private:
-		bool eof() const;
+		bool eof(int offset = 0) const;
 		void lex_ws();
 
 		void lex_simple_comment();

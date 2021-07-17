@@ -69,9 +69,9 @@ ysen::core::NonnullOwnPtr<ysen::lang::Lexer> ysen::lang::Lexer::lex(core::String
 	return lexer;
 }
 
-bool ysen::lang::Lexer::eof() const
+bool ysen::lang::Lexer::eof(int offset) const
 {
-	return m_cursor >= m_code.length();
+	return m_cursor + offset >= m_code.length();
 }
 
 void ysen::lang::Lexer::lex_ws()
@@ -226,6 +226,17 @@ void ysen::lang::Lexer::lex_other()
 	case '*':
 	case '/':
 	case '%':
+	case '>':
+	case '<':
+		if (!eof(1) && peek(1) == '=') {
+			core::String op{};
+			auto start = m_position;
+			op.push(consume());
+			op.push(consume());
+			emit_token(start, m_position, TokenType::BinOp, std::move(op));
+			break;
+		}
+		
 		emit_token(m_position, m_position.increment(), TokenType::BinOp, consume());
 		break;
 
