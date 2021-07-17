@@ -76,10 +76,17 @@ namespace ysen::lang::astvm {
 	using VariablePtr = core::SharedPtr<Variable>;
 	using VariableMap = std::map<core::String, VariablePtr>;
 
+	enum class ScopeType
+	{
+		Returnable,
+		Loopable,
+		Other,
+	};
+	
 	class Scope
 	{
 	public:
-		Scope(Scope *parent, core::String name);
+		Scope(Scope *parent, core::String name, ScopeType type);
 
 		auto* parent() const { return m_parent; }
 		auto& name() const { return m_name; }
@@ -94,11 +101,16 @@ namespace ysen::lang::astvm {
 
 		FunctionPtr find_function(const core::String& name);
 		VariablePtr find_variable(const core::String& name);
+
+		bool returning() const { return m_returning; }
+		void mark_return();
 	private:
 		Scope *m_parent{};
 		core::String m_name{};
 		FunctionMap m_functions{};
 		VariableMap m_variables{};
+		bool m_returning{false};
+		ScopeType m_scope_type{};
 	};
 	using ScopePtr = core::SharedPtr<Scope>;
 	using ScopeList = std::vector<ScopePtr>;
@@ -111,7 +123,7 @@ namespace ysen::lang::astvm {
 
 		const auto& current_scope() const { return m_scopes.back(); }
 		auto& current_scope() { return m_scopes.back(); }
-		void enter_scope(core::String name);
+		void enter_scope(core::String name, ScopeType = ScopeType::Other);
 		void exit_scope();
 
 		// Unpacks argument list into current scope.

@@ -24,7 +24,7 @@ ysen::lang::astvm::Function::Function(core::String name, FunctionParameterList p
 
 ysen::lang::astvm::Value ysen::lang::astvm::Function::invoke(Interpreter& vm, const std::vector<Value>& arguments) const
 {
-	vm.enter_scope(m_name);
+	vm.enter_scope(m_name, ScopeType::Returnable);
 	auto ret = m_callable(vm, arguments);
 	vm.exit_scope();
 	return ret;
@@ -39,8 +39,8 @@ void ysen::lang::astvm::Variable::set_value(Value value)
 	*m_value = std::move(value);
 }
 
-ysen::lang::astvm::Scope::Scope(Scope* parent, core::String name)
-	: m_parent(parent), m_name(std::move(name))
+ysen::lang::astvm::Scope::Scope(Scope* parent, core::String name, ScopeType type)
+	: m_parent(parent), m_name(std::move(name)), m_scope_type(type)
 {}
 
 ysen::core::String ysen::lang::astvm::Scope::qualified_name() const
@@ -85,6 +85,19 @@ ysen::lang::astvm::VariablePtr ysen::lang::astvm::Scope::find_variable(const cor
 	return m_parent ? m_parent->find_variable(name) : nullptr;
 }
 
+void ysen::lang::astvm::Scope::mark_return()
+{
+	m_returning = true;
+
+	if (m_scope_type == ScopeType::Returnable) {
+		return;
+	}
+
+	if (m_parent != nullptr) {
+		m_parent->mark_return();	
+	}
+}
+
 ysen::lang::astvm::Interpreter::Interpreter()
 {
 	enter_scope("global");
@@ -95,9 +108,9 @@ ysen::lang::astvm::ValuePtr ysen::lang::astvm::Interpreter::execute(const ast::A
 	return core::make_shared<Value>(node->visit(*this));
 }
 
-void ysen::lang::astvm::Interpreter::enter_scope(core::String name)
+void ysen::lang::astvm::Interpreter::enter_scope(core::String name, ScopeType type)
 {
-	m_scopes.emplace_back(core::adopt_shared(new Scope{ m_scopes.empty() ? nullptr : m_scopes.back().ptr(), std::move(name) }));
+	m_scopes.emplace_back(core::adopt_shared(new Scope{ m_scopes.empty() ? nullptr : m_scopes.back().ptr(), std::move(name), type }));
 }
 
 void ysen::lang::astvm::Interpreter::exit_scope()
