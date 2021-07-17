@@ -2,6 +2,7 @@
 
 
 #include "ysen/core/format.h"
+#include "ysen/core/ScopeExit.h"
 #include "ysen/lang/astvm/Interpreter.h"
 
 ysen::lang::ast::AstNode::AstNode(SourceRange source_range)
@@ -396,4 +397,83 @@ ysen::lang::astvm::Value ysen::lang::ast::AssignmentExpression::visit(astvm::Int
 
 	variable->set_value(m_body->visit(vm));
 	return *variable->value();
+}
+
+ysen::lang::ast::ElseIfStatement::ElseIfStatement(
+	SourceRange source_range, 
+	VarDeclarationPtr var_declaration, 
+	ExpressionPtr cond, 
+	ExpressionPtr body
+)
+	: Expression(source_range), m_var_declaration(std::move(var_declaration)),
+	m_condition(std::move(cond)), m_body(std::move(body))
+{}
+
+ysen::lang::astvm::Value ysen::lang::ast::ElseIfStatement::visit(astvm::Interpreter& vm) const
+{
+	return m_body->visit(vm);
+}
+
+ysen::lang::ast::ElseStatement::ElseStatement(SourceRange source_range, ExpressionPtr body)
+	: Expression(source_range), m_body(std::move(body))
+{}
+
+ysen::lang::astvm::Value ysen::lang::ast::ElseStatement::visit(astvm::Interpreter& vm) const
+{
+	return m_body->visit(vm);
+}
+
+ysen::lang::ast::IfStatement::IfStatement(
+	SourceRange source_range, 
+	VarDeclarationPtr var_declaration, 
+	ExpressionPtr cond, 
+	ExpressionPtr body, 
+	std::vector<ElseIfStatementPtr> else_ifs,
+	ElseStatementPtr else_statement
+)
+	: Expression(source_range), m_var_declaration(std::move(var_declaration)),
+	m_condition(std::move(cond)), m_body(std::move(body)),
+	m_else_if_statements(std::move(else_ifs)), m_else_statement(std::move(else_statement))
+{}
+
+ysen::lang::astvm::Value ysen::lang::ast::IfStatement::visit(astvm::Interpreter& vm) const
+{
+	vm.enter_scope("if");
+	core::ScopeExit guard{[&vm]() {
+		vm.exit_scope();
+	}};
+	
+	if (m_var_declaration) {
+		m_var_declaration->visit(vm);
+	}
+
+	auto condition = m_condition->visit(vm);
+
+	if (condition.is_trueish()) {
+		return m_body->visit(vm);
+	}
+
+	for (const auto &else_if : m_else_if_statements) {
+		if (else_if->declaration()) {
+			else_if->declaration()->visit(vm);
+		}
+
+		condition = else_if->condition()->visit(vm);
+
+		if (condition.is_trueish()) {
+			return else_if->visit(vm);
+		}
+	}
+
+	if (m_else_statement) {
+		return m_else_statement->visit(vm);
+	}
+
+	return {};
+}
+
+void ysen::lang::ast::IfStatement::generate_bytecode(bytecode::Generator& generator) const
+{
+
+	
 }

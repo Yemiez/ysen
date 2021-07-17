@@ -449,6 +449,44 @@ ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_assignment()
 	);
 }
 
+ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_if_stmt()
+{
+	auto start = consume().start_position();
+
+	if (eof() || !peek().is_paren_open()) {
+		throw ParseError("Expected opening parentheses after if keyword", eof() ? peek(-1) : peek());
+	}
+
+	consume(); // (
+	ast::VarDeclarationPtr var_declaration{};
+	
+	if (peek().is_keyword() && peek().content() == "var") {
+		var_declaration = core::dynamic_shared_cast<ast::VarDeclaration>(parse_var_declaration());
+
+		if (eof() || !peek().is_semi_colon()) {
+			throw ParseError("Expected semi-colon after var decl in if", eof() ? peek(-1) : peek());
+		}
+
+		consume(); // ;
+	}
+
+	auto condition = parse_expression();
+
+	if (eof() || !peek().is_paren_close()) {
+		throw ParseError("Expected closing parentheses after condition in if", eof() ? peek(-1) : peek());
+	}
+
+	consume(); // )
+	auto body = parse_statement_or_expression();
+	SourceRange source_range{start, body->source_range().end_position()};
+
+	return core::dynamic_shared_cast<ast::Expression>(
+		core::adopt_shared(
+			new ast::IfStatement(source_range, std::move(var_declaration), std::move(condition), std::move(body), {}, nullptr)	
+		)
+	);
+}
+
 ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_statement_or_expression()
 {
 	if (peek().is_keyword() && peek().content() == "var") {
@@ -467,7 +505,10 @@ ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_statement_or_expression
 	if (peek().is_identifier() && peek(1).is_equals()) {
 		return parse_assignment();
 	}
-
+	if (peek().is_keyword() && peek().content() == "if") {
+		return parse_if_stmt();
+	}
+	
 	auto expression = parse_expression();
 	return expression;
 }

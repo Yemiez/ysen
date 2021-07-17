@@ -46,6 +46,9 @@ namespace ysen::lang::ast {
 	class RangedLoopExpression;
 	class NumericRangeExpression;
 	class AssignmentExpression;
+	class ElseIfStatement;
+	class ElseStatement;
+	class IfStatement;
 	
 	using AstNodePtr = core::SharedPtr<AstNode>;
 	using ProgramPtr = core::SharedPtr<Program>;
@@ -72,6 +75,9 @@ namespace ysen::lang::ast {
 	using RangedLoopExpressionPtr = core::SharedPtr<RangedLoopExpression>;
 	using NumericRangeExpressionPtr = core::SharedPtr<NumericRangeExpression>;
 	using AssignmentExpressionPtr = core::SharedPtr<AssignmentExpression>;
+	using ElseIfStatementPtr = core::SharedPtr<ElseIfStatement>;
+	using ElseStatementPtr = core::SharedPtr<ElseStatement>;
+	using IfStatementPtr = core::SharedPtr<IfStatement>;
 	
 	class AstNode
 	{
@@ -428,5 +434,46 @@ namespace ysen::lang::ast {
 	private:
 		core::String m_name{};
 		ExpressionPtr m_body{};
+	};
+
+	class ElseIfStatement : public Expression
+	{
+	public:
+		ElseIfStatement(SourceRange, VarDeclarationPtr, ExpressionPtr cond, ExpressionPtr body);
+
+		const auto& declaration() const { return m_var_declaration; }
+		const auto& condition() const { return m_condition; }
+		const auto& body() const { return m_body; }
+
+		astvm::Value visit(astvm::Interpreter&) const override;
+	private:
+		VarDeclarationPtr m_var_declaration{};
+		ExpressionPtr m_condition{};
+		ExpressionPtr m_body{};
+	};
+
+	class ElseStatement : public Expression
+	{
+	public:
+		ElseStatement(SourceRange, ExpressionPtr body);
+
+		astvm::Value visit(astvm::Interpreter&) const override;
+	private:
+		ExpressionPtr m_body{};
+	};
+
+	class IfStatement : public Expression
+	{
+	public:
+		IfStatement(SourceRange, VarDeclarationPtr, ExpressionPtr cond, ExpressionPtr body, std::vector<ElseIfStatementPtr>, ElseStatementPtr);
+
+		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
+	private:
+		VarDeclarationPtr m_var_declaration{};
+		ExpressionPtr m_condition{};
+		ExpressionPtr m_body{};
+		std::vector<ElseIfStatementPtr> m_else_if_statements{};
+		ElseStatementPtr m_else_statement{};
 	};
 }
