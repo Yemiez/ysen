@@ -34,10 +34,20 @@ ysen::lang::astvm::Value ysen::lang::ast::ScopeStatement::visit(astvm::Interpret
 
 	for (const auto &node : m_statements) {
 		ret = node->visit(vm);
+		if (vm.current_scope()->returning()) {
+			break;
+		}
 	}
 
 	vm.exit_scope();
 	return ret;
+}
+
+void ysen::lang::ast::ScopeStatement::generate_bytecode(bytecode::Generator& generator) const
+{
+	for (const auto &node : m_statements) {
+		node->generate_bytecode(generator);
+	}
 }
 
 ysen::lang::ast::FunctionParameterExpression::FunctionParameterExpression(SourceRange source_range, core::String name,
@@ -93,6 +103,19 @@ ysen::lang::astvm::Value ysen::lang::ast::FunctionDeclarationStatement::visit(as
 	return {};
 }
 
+void ysen::lang::ast::FunctionDeclarationStatement::generate_bytecode(bytecode::Generator& generator) const
+{
+	generator.emit_block(m_name);
+
+	for (const auto& param : parameters()) {
+		generator.emit<bytecode::Pop>();
+		generator.emit<bytecode::StoreVariable>(param->name());
+	}
+	
+	m_body->generate_bytecode(generator);
+	generator.end_block();
+}
+
 ysen::lang::ast::VarDeclaration::VarDeclaration(SourceRange source_range, core::String name, core::SharedPtr<Expression> init)
 	: Statement(source_range), m_name(std::move(name)), m_expression(std::move(init))
 {}
@@ -108,6 +131,18 @@ ysen::lang::astvm::Value ysen::lang::ast::VarDeclaration::visit(astvm::Interpret
 	// Declare it
 	vm.current_scope()->declare_variable(astvm::var(name(), astvm::value(value)));
 	return value;
+}
+
+void ysen::lang::ast::VarDeclaration::generate_bytecode(bytecode::Generator& generator) const
+{
+	if (m_expression) {
+		m_expression->generate_bytecode(generator);
+	}
+	else {
+		generator.emit<bytecode::LoadImmediate>(astvm::undefined());
+	}
+
+	generator.emit<bytecode::StoreVariable>(m_name);
 }
 
 ysen::lang::ast::FunctionCallExpression::FunctionCallExpression(SourceRange source_range, core::String name,
@@ -130,8 +165,20 @@ ysen::lang::astvm::Value ysen::lang::ast::Program::visit(astvm::Interpreter& vm)
 	astvm::Value ret{};
 	for (const auto& child : m_children) {
 		ret = child->visit(vm);
+		if (vm.current_scope()->returning()) {
+			break;
+		}
 	}
 	return ret;
+}
+
+void ysen::lang::ast::Program::generate_bytecode(bytecode::Generator& generator) const
+{
+	generator.emit_block("main");
+	for (const auto &node : m_children) {
+		node->generate_bytecode(generator);
+	}
+	generator.end_block();
 }
 
 ysen::lang::ast::Expression::Expression(SourceRange source_range)
@@ -170,13 +217,30 @@ ysen::lang::astvm::Value ysen::lang::ast::FunctionCallExpression::visit(astvm::I
 	return function->invoke(vm, values);
 }
 
+void ysen::lang::ast::FunctionCallExpression::generate_bytecode(bytecode::Generator& generator) const
+{
+	for (const auto& arg : m_arguments) {
+		arg->generate_bytecode(generator);
+		generator.emit<bytecode::Push>();
+	}
+	
+	generator.emit<bytecode::Call>(m_name);
+}
+
 ysen::lang::ast::ReturnExpression::ReturnExpression(SourceRange source_range, ExpressionPtr expression)
 	: Expression(source_range), m_expression(std::move(expression))
 {}
 
 ysen::lang::astvm::Value ysen::lang::ast::ReturnExpression::visit(astvm::Interpreter& vm) const
 {
+	vm.current_scope()->mark_return();
 	return m_expression->visit(vm);
+}
+
+void ysen::lang::ast::ReturnExpression::generate_bytecode(bytecode::Generator& generator) const
+{
+	m_expression->generate_bytecode(generator);
+	generator.emit<bytecode::Ret>();
 }
 
 ysen::lang::ast::BinOpExpression::BinOpExpression(SourceRange source_range, ExpressionPtr left, ExpressionPtr right, BinOp op)
@@ -185,6 +249,9 @@ ysen::lang::ast::BinOpExpression::BinOpExpression(SourceRange source_range, Expr
 
 ysen::lang::astvm::Value ysen::lang::ast::BinOpExpression::visit(astvm::Interpreter& vm) const
 {
+	auto lhs = m_left->visit(vm);
+	auto rhs = m_right->visit(vm);
+	
 	switch (m_op) {
 	case BinOp::Addition: return lhs + rhs;
 	case BinOp::Subtraction: return lhs - rhs;
@@ -195,6 +262,24 @@ ysen::lang::astvm::Value ysen::lang::ast::BinOpExpression::visit(astvm::Interpre
 	case BinOp::GreaterEqual: return lhs > rhs || lhs == rhs;
 	case BinOp::LessEqual: return lhs < rhs || lhs == rhs;
 	default: return {};
+	}
+}
+
+void ysen::lang::ast::BinOpExpression::generate_bytecode(bytecode::Generator& generator) const
+{
+	m_left->generate_bytecode(generator);
+	auto reg = generator.allocate_register();
+	generator.emit(core::adopt_shared(static_cast<bytecode::Instruction*>(new bytecode::Store(reg))));
+	m_right->generate_bytecode(generator);
+
+	switch (m_op) {
+	case BinOp::Addition: 
+		generator.emit(core::adopt_shared(static_cast<bytecode::Instruction*>(new bytecode::Add(reg))));
+		break;
+	case BinOp::Subtraction: break;
+	case BinOp::Division: break;
+	case BinOp::Multiplication: break;
+	default: ;
 	}
 }
 
@@ -222,6 +307,11 @@ ysen::lang::ast::IntegerExpression::IntegerExpression(SourceRange source_range, 
 ysen::lang::astvm::Value ysen::lang::ast::IntegerExpression::visit(astvm::Interpreter&) const
 {
 	return { m_value };
+}
+
+void ysen::lang::ast::IntegerExpression::generate_bytecode(bytecode::Generator& generator) const
+{
+	generator.emit(core::adopt_shared(static_cast<bytecode::Instruction*>(new bytecode::LoadImmediate(m_value))));
 }
 
 ysen::lang::ast::FloatExpression::FloatExpression(SourceRange source_range, float value)
@@ -253,6 +343,11 @@ ysen::lang::astvm::Value ysen::lang::ast::IdentifierExpression::visit(astvm::Int
 	}
 	
 	return *variable->value();
+}
+
+void ysen::lang::ast::IdentifierExpression::generate_bytecode(bytecode::Generator& generator) const
+{
+	generator.emit<bytecode::LoadVariable>(m_name);
 }
 
 ysen::lang::ast::ArrayExpression::ArrayExpression(SourceRange source_range, std::vector<ExpressionPtr> expressions)
@@ -351,7 +446,7 @@ ysen::lang::astvm::Value ysen::lang::ast::RangedLoopExpression::visit(astvm::Int
 	
 	if (range.is_object()) {
 		for (auto [key, value] : range.object()) {
-			vm.enter_scope("ranged_loop");
+			vm.enter_scope("ranged_loop", astvm::ScopeType::Loopable);
 			declaration()->visit(vm);
 
 			// TODO: This is ugly, fix it
@@ -364,7 +459,7 @@ ysen::lang::astvm::Value ysen::lang::ast::RangedLoopExpression::visit(astvm::Int
 	}
 	else if (range.is_array()) {
 		for (auto &value : range.array()) {
-			vm.enter_scope("ranged_loop");
+			vm.enter_scope("ranged_loop", astvm::ScopeType::Loopable);
 			declaration()->visit(vm);
 
 			// TODO: This is ugly, fix it

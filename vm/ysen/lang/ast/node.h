@@ -2,6 +2,7 @@
 #include <ysen/lang/Lexer.h>
 #include <ysen/lang/astvm/Value.h>
 #include "ysen/core/Optional.h"
+#include "ysen/lang/bytecode/Generator.h"
 
 namespace ysen::lang::astvm {
 	class Interpreter;
@@ -110,6 +111,7 @@ namespace ysen::lang::ast {
 
 		
 		virtual astvm::Value visit(astvm::Interpreter&) const { return {}; }
+		virtual void generate_bytecode(bytecode::Generator&) const {}
 	protected:
 		SourceRange m_source_range{};
 	};
@@ -124,6 +126,7 @@ namespace ysen::lang::ast {
 		void emit(core::SharedPtr<AstNode>);
 		
 		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
 	private:
 		std::vector<core::SharedPtr<AstNode>> m_children{};
 	};
@@ -155,6 +158,7 @@ namespace ysen::lang::ast {
 		void emit(core::SharedPtr<Statement>);
 
 		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
 	private:
 		std::vector<core::SharedPtr<Statement>> m_statements{};
 		core::String m_name{};
@@ -200,6 +204,7 @@ namespace ysen::lang::ast {
 		const auto& parameters() const { return m_parameters; }
 		const auto& body() const { return m_body; }
 		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
 	private:
 		core::String m_name{};
 		std::vector<FunctionParameterExpressionPtr> m_parameters{};
@@ -216,6 +221,7 @@ namespace ysen::lang::ast {
 		const auto& expression() const { return m_expression; }
 
 		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
 	private:
 		core::String m_name{};
 		core::SharedPtr<Expression> m_expression{};
@@ -231,6 +237,7 @@ namespace ysen::lang::ast {
 		const auto& arguments() const { return m_arguments; }
 
 		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
 	private:
 		core::String m_name{};
 		std::vector<ExpressionPtr> m_arguments{};
@@ -245,6 +252,7 @@ namespace ysen::lang::ast {
 		const auto& expression() const { return m_expression; }
 
 		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
 	private:
 		ExpressionPtr m_expression{};
 	};
@@ -263,6 +271,7 @@ namespace ysen::lang::ast {
 		bool is_bin_op_expression() const override { return true; }
 
 		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
 	private:
 		ExpressionPtr m_left{};
 		ExpressionPtr m_right{};
@@ -307,6 +316,7 @@ namespace ysen::lang::ast {
 		void set_value(int value) { m_value = value; }
 
 		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
 	private:
 		int m_value{};
 	};
@@ -334,6 +344,7 @@ namespace ysen::lang::ast {
 		const core::String& name() const { return m_name; }
 
 		astvm::Value visit(astvm::Interpreter&) const override;
+		void generate_bytecode(bytecode::Generator&) const override;
 	private:
 		core::String m_name{};
 	};
