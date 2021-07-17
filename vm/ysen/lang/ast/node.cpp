@@ -185,10 +185,14 @@ ysen::lang::ast::BinOpExpression::BinOpExpression(SourceRange source_range, Expr
 ysen::lang::astvm::Value ysen::lang::ast::BinOpExpression::visit(astvm::Interpreter& vm) const
 {
 	switch (m_op) {
-	case BinOp::Addition: return m_left->visit(vm) + m_right->visit(vm);
-	case BinOp::Subtraction: return m_left->visit(vm) - m_right->visit(vm);
-	case BinOp::Division: return m_left->visit(vm) / m_right->visit(vm);
-	case BinOp::Multiplication: return m_left->visit(vm) * m_right->visit(vm);
+	case BinOp::Addition: return lhs + rhs;
+	case BinOp::Subtraction: return lhs - rhs;
+	case BinOp::Division: return lhs / rhs;
+	case BinOp::Multiplication: return lhs * rhs;
+	case BinOp::Greater: return lhs > rhs;
+	case BinOp::Less: return lhs < rhs;
+	case BinOp::GreaterEqual: return lhs > rhs || lhs == rhs;
+	case BinOp::LessEqual: return lhs < rhs || lhs == rhs;
 	default: return {};
 	}
 }

@@ -15,6 +15,10 @@ namespace ysen::lang::ast {
 		Subtraction,
 		Division,
 		Multiplication,
+		Greater,
+		GreaterEqual,
+		Less,
+		LessEqual,
 	};
 
 	class AstNode;

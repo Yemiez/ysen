@@ -265,6 +265,18 @@ ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_expression()
 		else if (token.content() == "-") {
 			op = ast::BinOp::Subtraction;
 		}
+		else if (token.content() == ">") {
+			op = ast::BinOp::Greater;
+		}
+		else if (token.content() == "<") {
+			op = ast::BinOp::Less;
+		}
+		else if (token.content() == ">=") {
+			op = ast::BinOp::GreaterEqual;
+		}
+		else if (token.content() == "<=") {
+			op = ast::BinOp::LessEqual;
+		}
 
 		node = core::dynamic_shared_cast<ast::Expression>(
 			core::adopt_shared(new ast::BinOpExpression(token.source_range(), node, parse_term(), op))
