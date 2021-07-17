@@ -1,61 +1,64 @@
+#include <format>
+#include <functional>
 #include <iostream>
-#include <ysen/core/SharedPtr.h>
-#include <ysen/core/NonnullOwnPtr.h>
 #include <ysen/core/format.h>
-#include <ysen/lang/Lexer.h>
-#include <ysen/lang/ast/node.h>
-#include <ysen/core/String.h>
+#include <ysen/core/NonnullOwnPtr.h>
 #include <ysen/core/Optional.h>
 #include <ysen/core/random.h>
+#include <ysen/core/SharedPtr.h>
+#include <ysen/core/String.h>
 #include <ysen/fs/io.h>
-#include <functional>
+#include <ysen/lang/Lexer.h>
+#include <ysen/lang/ast/node.h>
 #include "ysen/lang/Parser.h"
 #include "ysen/lang/astvm/Interpreter.h"
 #include "ysen/lang/astvm/Value.h"
-#include <format>
+
+#include "ysen/lang/ScriptEnvironment.h"
+#include "ysen/lang/bytecode/BytecodeInterpreter.h"
+#include "ysen/lang/bytecode/Instruction.h"
 
 using namespace ysen;
 using namespace ysen::lang;
 
+void bytecode_test(const char* code)
+{
+	bytecode::Generator generator;
+	auto lexer = Lexer::lex(code);
+	Parser p;
+	auto node = p.parse(lexer->tokens());
+	node->generate_bytecode(generator);
+
+	bytecode::BytecodeInterpreter interpreter;
+	auto result = interpreter.execute(generator.program());
+	core::println("Exec result: {}", result.to_formatted_string());
+}
+
+void ast_test(const char* code)
+{
+	auto env = core::adopt_nonnull(new ScriptEnvironment);
+	core::println("Exec result: {}", env->eval(code)->to_formatted_string());
+}
+
 int main()
 {
-	auto lexer = lang::Lexer::lex(R"(
-		for (var x : 0..99) {
-			print("x={}", x);
-		}
-		var b = 5;
-		var a = b;
-		a = 20;
-		print('a={}, b={}', a, b);
-)", lang::WhitespacePolicy::Ignore, lang::CommentPolicy::Ignore);
-
-	auto parser = core::adopt_nonnull(new lang::Parser);
-
 	try {
-		auto top_node = parser->parse(lexer->tokens());
-		auto interpreter = core::make_shared<astvm::Interpreter>();
+		auto code = R"(
+var a = 5 + 5;
+var b = a + 10;
 
-		interpreter->add(astvm::function("print", [](astvm::VariadicFunction, const std::vector<astvm::Value>& arguments) -> int {
-			const auto& fmt = arguments.at(0);
-			if (!fmt.is_string() && arguments.size() > 1) {
-				return 1;
-			}
-			core::details::FormatterContext<> context{fmt.to_string()};
-			for (auto i = 1u; i < arguments.size(); ++i) {
-				context.formatter_arguments().collect(arguments.at(i).to_string());
-			}
-			core::println(context.format());
-			return 0;
-		}));
-		interpreter->add(astvm::function("to_string", [](const astvm::Value& value) -> core::String {
-			return value.to_string();
-		}));
-		interpreter->add(astvm::function("to_formatted_string", [](const astvm::Value& value) -> core::String {
-			return value.to_formatted_string();
-		}));
+fun testing(a, b) {
+	if (a >= 10) {
+		ret (a / 2) + b;
+	}
+	
+	ret a + b
+}
+
+ret testing(a, b);
+)";
 		
-		auto ret = interpreter->execute(top_node.ptr());
-		core::println("Ret: {}", ret->to_formatted_string());
+		bytecode_test(code);
 	}
 	catch (lang::ParseError& parse_error) {
 		core::println(parse_error.what());
