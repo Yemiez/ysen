@@ -14,6 +14,7 @@ namespace ysen::core {
 
 		bool has_value() const { return m_has_value; }
 		void reset();
+		T release_value();
 		T value() const { return m_value; }
 
 		Optional& operator=(const Optional&) = default;
@@ -41,6 +42,15 @@ namespace ysen::core {
 	void Optional<T>::reset()
 	{
 		*this = {};
+	}
+
+	template <typename T>
+	T Optional<T>::release_value()
+	{
+		T tmp{};
+		std::swap(tmp, m_value);
+		m_has_value = false;
+		return std::move(tmp);
 	}
 
 	template <typename T>
