@@ -42,6 +42,21 @@
     <ClCompile Include="ysen\core\format.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ysen\lang\ScriptEnvironment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ysen\lang\bytecode\Register.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ysen\lang\bytecode\BytecodeInterpreter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ysen\lang\bytecode\Instruction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ysen\lang\bytecode\Generator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ysen\core\NonnullOwnPtr.h">
@@ -87,6 +102,30 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ysen\core\fnv1a.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ysen\lang\bytecode\Instruction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ysen\lang\IEnvironment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ysen\lang\ScriptEnvironment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ysen\lang\bytecode\BytecodeInterpreter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ysen\lang\bytecode\Register.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ysen\lang\bytecode\Generator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ysen\lang\bytecode\Label.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ysen\core\ScopeExit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

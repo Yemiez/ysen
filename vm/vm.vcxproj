@@ -152,8 +152,13 @@
     <ClCompile Include="ysen\lang\astvm\Interpreter.cpp" />
     <ClCompile Include="ysen\lang\astvm\Value.cpp" />
     <ClCompile Include="ysen\lang\ast\node.cpp" />
+    <ClCompile Include="ysen\lang\bytecode\Generator.cpp" />
+    <ClCompile Include="ysen\lang\bytecode\Instruction.cpp" />
+    <ClCompile Include="ysen\lang\bytecode\BytecodeInterpreter.cpp" />
+    <ClCompile Include="ysen\lang\bytecode\Register.cpp" />
     <ClCompile Include="ysen\lang\Lexer.cpp" />
     <ClCompile Include="ysen\lang\Parser.cpp" />
+    <ClCompile Include="ysen\lang\ScriptEnvironment.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ysen\core\fnv1a.h" />
@@ -162,6 +167,7 @@
     <ClInclude Include="ysen\core\Optional.h" />
     <ClInclude Include="ysen\core\random.h" />
     <ClInclude Include="ysen\core\RefCounterBase.h" />
+    <ClInclude Include="ysen\core\ScopeExit.h" />
     <ClInclude Include="ysen\core\SharedPtr.h" />
     <ClInclude Include="ysen\core\String.h" />
     <ClInclude Include="ysen\core\StringView.h" />
@@ -169,8 +175,15 @@
     <ClInclude Include="ysen\lang\ast\node.h" />
     <ClInclude Include="ysen\lang\astvm\Interpreter.h" />
     <ClInclude Include="ysen\lang\astvm\Value.h" />
+    <ClInclude Include="ysen\lang\bytecode\Generator.h" />
+    <ClInclude Include="ysen\lang\bytecode\Instruction.h" />
+    <ClInclude Include="ysen\lang\bytecode\BytecodeInterpreter.h" />
+    <ClInclude Include="ysen\lang\bytecode\Label.h" />
+    <ClInclude Include="ysen\lang\bytecode\Register.h" />
+    <ClInclude Include="ysen\lang\IEnvironment.h" />
     <ClInclude Include="ysen\lang\lexer.h" />
     <ClInclude Include="ysen\lang\Parser.h" />
+    <ClInclude Include="ysen\lang\ScriptEnvironment.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
