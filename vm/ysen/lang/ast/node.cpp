@@ -533,27 +533,35 @@ ysen::lang::ast::IfStatement::IfStatement(
 
 ysen::lang::astvm::Value ysen::lang::ast::IfStatement::visit(astvm::Interpreter& vm) const
 {
-	vm.enter_scope("if");
-	core::ScopeExit guard{[&vm]() {
-		vm.exit_scope();
-	}};
+	{
+		vm.enter_scope("if");
+		core::ScopeExit guard{[&vm]() {
+			vm.exit_scope();
+		}};
+		
+		if (m_var_declaration) {
+			m_var_declaration->visit(vm);
+		}
+
+		auto condition = m_condition->visit(vm);
+
+		if (condition.is_trueish()) {
+			return m_body->visit(vm);
+		}
+	}
 	
-	if (m_var_declaration) {
-		m_var_declaration->visit(vm);
-	}
-
-	auto condition = m_condition->visit(vm);
-
-	if (condition.is_trueish()) {
-		return m_body->visit(vm);
-	}
 
 	for (const auto &else_if : m_else_if_statements) {
+		vm.enter_scope("else_if");
+		core::ScopeExit guard{[&vm]() {
+			vm.exit_scope();
+		}};
+		
 		if (else_if->declaration()) {
 			else_if->declaration()->visit(vm);
 		}
 
-		condition = else_if->condition()->visit(vm);
+		auto condition = else_if->condition()->visit(vm);
 
 		if (condition.is_trueish()) {
 			return else_if->visit(vm);
