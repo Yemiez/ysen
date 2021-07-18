@@ -71,6 +71,8 @@ namespace ysen::core {
 		bool contains(const T* s) const { return find(s) != NPOS; }
 		bool contains(const BasicString& s) const { return find(s) != NPOS; }
 
+		bool operator!=(const T*) const;
+		bool operator!=(const BasicString&) const;
 		bool operator==(const T*) const;
 		bool operator==(const BasicString&) const;
 		bool operator<(const T*) const;
@@ -347,6 +349,18 @@ namespace ysen::core {
 	size_t BasicString<T>::find(const BasicString& s) const
 	{
 		return find(s.c_str());
+	}
+
+	template <typename T>
+	bool BasicString<T>::operator!=(const T* s) const
+	{
+		return !(*this == s);
+	}
+
+	template <typename T>
+	bool BasicString<T>::operator!=(const BasicString& s) const
+	{
+		return !(*this == s);
 	}
 
 	template <typename T>
