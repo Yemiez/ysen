@@ -449,14 +449,13 @@ ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_assignment()
 	);
 }
 
-ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_if_stmt()
+std::tuple<ysen::lang::ast::VarDeclarationPtr, ysen::lang::ast::ExpressionPtr> ysen::lang::Parser::
+parse_if_decl_and_condition()
 {
-	auto start = consume().start_position();
-
 	if (eof() || !peek().is_paren_open()) {
 		throw ParseError("Expected opening parentheses after if keyword", eof() ? peek(-1) : peek());
 	}
-
+	
 	consume(); // (
 	ast::VarDeclarationPtr var_declaration{};
 	
@@ -477,12 +476,72 @@ ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_if_stmt()
 	}
 
 	consume(); // )
-	auto body = parse_statement_or_expression();
-	SourceRange source_range{start, body->source_range().end_position()};
 
+	return { std::move(var_declaration), std::move(condition) };
+}
+
+ysen::lang::ast::ExpressionPtr ysen::lang::Parser::parse_if_stmt()
+{
+	auto if_start_pos = consume().start_position();
+	auto [if_declaration, if_condition] = parse_if_decl_and_condition();
+
+	// Parse body
+	auto if_body = parse_statement_or_expression();
+	SourceRange source_range{if_start_pos, if_body->source_range().end_position()};
+
+	if (eof() || !(peek().is_keyword() && peek().content() == "else")) {
+		return core::dynamic_shared_cast<ast::Expression>(
+			core::adopt_shared(
+				new ast::IfStatement(source_range, std::move(if_declaration), std::move(if_condition), std::move(if_body), {}, nullptr)	
+			)
+		);
+	}
+
+	std::vector<ast::ElseIfStatementPtr> else_if_statements{};
+	ast::ElseStatementPtr else_statement;
+	
+	while (true) {
+		if (eof() || !(peek().is_keyword() && peek().content() == "else")) {
+			break; // End of if block
+		}
+
+		auto start_pos = consume().start_position(); // else
+
+		if (peek().is_keyword() && peek().content() == "if") {
+			consume(); // if
+
+			auto [if_else_decl, if_else_cond] = parse_if_decl_and_condition();
+			auto if_else_body = parse_statement_or_expression();
+			SourceRange if_else_range{start_pos, if_else_body->source_range().end_position()};
+			
+			else_if_statements.emplace_back(core::adopt_shared(new ast::ElseIfStatement(
+				if_else_range,
+				std::move(if_else_decl),
+				std::move(if_else_cond),
+				std::move(if_else_body)
+			)));
+		}
+		else {
+			auto else_body = parse_statement_or_expression();
+			SourceRange else_range{start_pos, else_body->source_range().end_position()};
+
+			else_statement = core::adopt_shared(new ast::ElseStatement(
+				else_range, 
+				std::move(else_body)
+			));
+		}
+	}
+	
 	return core::dynamic_shared_cast<ast::Expression>(
 		core::adopt_shared(
-			new ast::IfStatement(source_range, std::move(var_declaration), std::move(condition), std::move(body), {}, nullptr)	
+			new ast::IfStatement(
+				source_range,
+				std::move(if_declaration), 
+				std::move(if_condition), 
+				std::move(if_body), 
+				std::move(else_if_statements), 
+				std::move(else_statement)
+			)	
 		)
 	);
 }

@@ -34,6 +34,7 @@ namespace ysen::lang {
 		ast::ExpressionPtr parse_fun_decl_or_expr();
 		ast::ExpressionPtr parse_for_ranged_or_conditional();
 		ast::ExpressionPtr parse_assignment();
+		std::tuple<ast::VarDeclarationPtr, ast::ExpressionPtr> parse_if_decl_and_condition();
 		ast::ExpressionPtr parse_if_stmt();
 		ast::ExpressionPtr parse_statement_or_expression();
 		void parse_inner_block();
